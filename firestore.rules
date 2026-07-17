@@ -1,0 +1,335 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Catch-all Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'phone');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "nyikatraders@gmail.com" || 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Entity validations as required by the Eight Pillars
+    function isValidUser(u) {
+      return u.uid == request.auth.uid &&
+             u.email is string && u.email.size() <= 256 &&
+             (u.name == null || (u.name is string && u.name.size() <= 200)) &&
+             (u.phone == null || (u.phone is string && u.phone.size() <= 32)) &&
+             (u.role == null || u.role in ["user", "admin"]) &&
+             (u.status == null || u.status in ["active", "suspended", "inactive"]);
+    }
+
+    function isValidDraft(d) {
+      return d.userId == request.auth.uid &&
+             d.documentId is string && d.documentId.size() <= 128 &&
+             (d.progress == null || (d.progress is int && d.progress >= 0 && d.progress <= 100)) &&
+             (d.status == null || d.status in ["in_progress", "completed", "archived"]);
+    }
+
+    function isValidOrder(o) {
+      return o.userId == request.auth.uid &&
+             o.amount is number && o.amount >= 0 &&
+             o.paymentStatus in ["pending", "paid", "failed"];
+    }
+
+    function isValidPayment(p) {
+      return p.orderId is string && p.orderId.size() <= 128 &&
+             p.amount is number && p.amount >= 0;
+    }
+
+    function isValidRefund(r) {
+      return r.orderId is string && r.orderId.size() <= 128 &&
+             r.amount is number && r.amount >= 0 &&
+             r.status in ["requested", "processed", "rejected"];
+    }
+
+    // We do not require complex fields validation on server-generated metadata during reads or basic check
+    function isValidInvoice(i) {
+      return i.invoiceNo is string && i.invoiceNo.size() <= 64 &&
+             i.orderId is string && i.orderId.size() <= 128 &&
+             i.totalAmount is number && i.totalAmount >= 0;
+    }
+
+    function isValidNotification(n) {
+      return n.userId is string && n.userId.size() <= 128 &&
+             n.message is string && n.message.size() <= 2048;
+    }
+
+    // A simple validation for contact submissions
+    function isValidContactMessage(m) {
+      return m.name is string && m.name.size() <= 200 &&
+             m.email is string && m.email.size() <= 256 &&
+             m.message is string && m.message.size() <= 5000;
+    }
+
+    function isValidSupportTicket(t) {
+      return t.subject is string && t.subject.size() <= 500 &&
+             t.status in ["open", "pending", "resolved"];
+    }
+
+    // A simple validation for coming soon requests
+    function isValidComingSoonRequest(r) {
+      return r.email is string && r.email.size() <= 256 &&
+             r.targetName is string && r.targetName.size() <= 200;
+    }
+
+    function isValidReview(r) {
+      return r.rating is number && r.rating >= 1 && r.rating <= 5 &&
+             r.comment is string && r.comment.size() <= 4096;
+    }
+
+    function isValidActivityLog(l) {
+      return l.userId == request.auth.uid &&
+             l.action is string && l.action.size() <= 256;
+    }
+
+    // Rules matching individual paths
+
+    // Users
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().role == existing().role || isAdmin()
+      );
+      allow delete: if isAdmin();
+
+      // Drafts subcollection
+      match /drafts/{draftId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidDraft(incoming());
+        allow update: if isOwner(userId) && isValidDraft(incoming()) && (
+          incoming().userId == existing().userId &&
+          incoming().documentId == existing().documentId
+        );
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Orders subcollection
+      match /orders/{orderId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidOrder(incoming());
+        allow update: if isOwner(userId) && isValidOrder(incoming()) && (
+          incoming().userId == existing().userId
+        );
+        allow delete: if isAdmin();
+      }
+
+      // Payments subcollection
+      match /payments/{paymentId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidPayment(incoming());
+        allow update: if isOwner(userId) && isValidPayment(incoming());
+        allow delete: if isAdmin();
+      }
+
+      // Refunds subcollection
+      match /refunds/{refundId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidRefund(incoming());
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+      }
+
+      // Invoices subcollection
+      match /invoices/{invoiceId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin() || (isOwner(userId) && isValidInvoice(incoming()));
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+      }
+
+      // Notifications subcollection
+      match /notifications/{notifId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin() || (isOwner(userId) && isValidNotification(incoming()));
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Support tickets subcollection
+      match /support_tickets/{ticketId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidSupportTicket(incoming());
+        allow update: if isOwner(userId) && isValidSupportTicket(incoming());
+        allow delete: if isAdmin();
+      }
+
+      // Activity Logs subcollection
+      match /activity_logs/{logId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidActivityLog(incoming());
+        allow update, delete: if false; // Logs are immutable
+      }
+    }
+
+    // Admins
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Roles
+    match /roles/{roleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Permissions
+    match /permissions/{permissionId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Categories
+    match /categories/{catId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Subcategories
+    match /subcategories/{subcatId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Documents (Document templates)
+    match /documents/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Question Sets
+    match /questionSets/{setId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Questions
+    match /questions/{questionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Clauses
+    match /clauses/{clauseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Knowledge Base
+    match /knowledgeBase/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Coupons
+    match /coupons/{code} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Referrals
+    match /referrals/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Reviews (Client draft builder ratings)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidReview(incoming());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Cross-Sell
+    match /crossSell/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Analytics
+    match /analytics/{id} {
+      allow create: if isSignedIn();
+      allow read, write: if isAdmin();
+    }
+
+    // Audit logs
+    match /audit_logs/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // Settings
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // SEO
+    match /seo/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // CMS
+    match /cms/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Contact messages
+    match /contactMessages/{msgId} {
+      allow create: if isValidContactMessage(incoming());
+      allow read, write: if isAdmin();
+    }
+
+    // Coming soon requests
+    match /comingSoonRequests/{reqId} {
+      allow create: if isValidComingSoonRequest(incoming());
+      allow read, write: if isAdmin();
+    }
+
+    // Email Templates
+    match /emailTemplates/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // WhatsApp Templates
+    match /whatsappTemplates/{id} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

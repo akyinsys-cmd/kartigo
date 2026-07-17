@@ -1,0 +1,556 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Core user metadata and business profile configurations",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin", "super_admin"] },
+        "status": { "type": "string", "enum": ["active", "suspended", "inactive"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "businessProfile": { "type": "object" },
+        "savedDrafts": { "type": "array" },
+        "purchaseCount": { "type": "number" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "System administrative user with elevated roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "super_admin"] },
+        "permissions": { "type": "array" },
+        "assignedBy": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Role": {
+      "title": "Role",
+      "description": "System role definitions for RBAC permissions mapping",
+      "type": "object",
+      "properties": {
+        "roleName": { "type": "string" },
+        "description": { "type": "string" },
+        "permissions": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roleName", "permissions"]
+    },
+    "Permission": {
+      "title": "Permission",
+      "description": "Individual policy rule definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "action": { "type": "string" },
+        "resource": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "action"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Top level legal, HR, and business categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "status": { "type": "string", "enum": ["Available", "Coming Soon", "Hidden"] },
+        "seo": { "type": "object" }
+      },
+      "required": ["id", "title"]
+    },
+    "Subcategory": {
+      "title": "Subcategory",
+      "description": "Groupings of documents under major categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "categoryId", "title"]
+    },
+    "DocumentTemplate": {
+      "title": "DocumentTemplate",
+      "description": "Enterprise document engine template metadata and rules",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "subcategoryId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "questionSetId": { "type": "string" },
+        "clauseSet": { "type": "array" },
+        "crossSellMapping": { "type": "array" },
+        "seo": { "type": "object" },
+        "status": { "type": "string", "enum": ["Active", "Draft", "Archived"] },
+        "version": { "type": "string" }
+      },
+      "required": ["id", "title", "categoryId", "price"]
+    },
+    "QuestionSet": {
+      "title": "QuestionSet",
+      "description": "Set of dynamic wizard questions linked to a document model",
+      "type": "object",
+      "properties": {
+        "documentTemplateId": { "type": "string" },
+        "questions": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["documentTemplateId", "questions"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "Granular document engine wizard step details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "type": { "type": "string" },
+        "validation": { "type": "string" },
+        "required": { "type": "boolean" },
+        "conditionalLogic": { "type": "object" },
+        "order": { "type": "number" },
+        "placeholder": { "type": "string" },
+        "defaultValue": { "type": "string" }
+      },
+      "required": ["id", "question", "type"]
+    },
+    "Clause": {
+      "title": "Clause",
+      "description": "Vetted clause block utilized in legal contracts assembly",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "body": { "type": "string" },
+        "required": { "type": "boolean" },
+        "priority": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "title", "body"]
+    },
+    "KnowledgeBase": {
+      "title": "KnowledgeBase",
+      "description": "Expert advisory insights and clauses repository mapping",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "body": { "type": "string" },
+        "tags": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "body"]
+    },
+    "Draft": {
+      "title": "Draft",
+      "description": "In-progress conversational compiling session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "documentId": { "type": "string" },
+        "answers": { "type": "object" },
+        "progress": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["in_progress", "completed", "archived"] }
+      },
+      "required": ["userId", "documentId"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Client transactions, licensing and invoice triggers",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "userId": { "type": "string" },
+        "document": { "type": "object" },
+        "amount": { "type": "number" },
+        "gst": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed"] },
+        "invoice": { "type": "object" },
+        "downloadUrl": { "type": "string" },
+        "purchaseDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "userId", "amount", "paymentStatus"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Raw verification receipt from secure gateways (Razorpay)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "razorpayPaymentId": { "type": "string" },
+        "signature": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orderId", "amount"]
+    },
+    "Refund": {
+      "title": "Refund",
+      "description": "Reversal of order transactions triggered via compliance support",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "amount": { "type": "number" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["requested", "processed", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orderId", "amount", "status"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Legally tax-compliant client PDF invoices metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNo": { "type": "string" },
+        "userId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "baseAmount": { "type": "number" },
+        "gstAmount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "customerName": { "type": "string" },
+        "gstin": { "type": "string" },
+        "pan": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "invoiceNo", "orderId", "totalAmount"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Active promotional campaign codes",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "maxDiscount": { "type": "number" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "isActive": { "type": "boolean" },
+        "usageCount": { "type": "number" }
+      },
+      "required": ["code", "discountPercent", "isActive"]
+    },
+    "Referral": {
+      "title": "Referral",
+      "description": "Affiliate tracks rewarding user signups and purchases",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "referrerId": { "type": "string" },
+        "refereeEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["sent", "signed_up", "purchased"] },
+        "rewardPoints": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "referrerId", "refereeEmail", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Transactional context updates routed to client profiles",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "message"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Client feedback and issues tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "pending", "resolved"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "subject", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Client draft builder ratings and testimonials vetting",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "isApproved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "rating", "comment"]
+    },
+    "CrossSell": {
+      "title": "CrossSell",
+      "description": "Rules recommending secondary templates for customer packages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetDocId": { "type": "string" },
+        "recommendedDocIds": { "type": "array" },
+        "discountPercent": { "type": "number" }
+      },
+      "required": ["id", "targetDocId", "recommendedDocIds"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "Usage counters tracking conversions and chat triggers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "event": { "type": "string" },
+        "userId": { "type": "string" },
+        "meta": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "event"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Internal record trace of system setting modifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actorId": { "type": "string" },
+        "actorEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "actorId", "action"]
+    },
+    "SystemSetting": {
+      "title": "SystemSetting",
+      "description": "App operational constants including server models control",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "maintenanceMode": { "type": "boolean" },
+        "geminiModel": { "type": "string" },
+        "paymentGateways": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id"]
+    },
+    "SEO": {
+      "title": "SEO",
+      "description": "System pages SEO optimizations definitions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "slug": { "type": "string" },
+        "titlePattern": { "type": "string" },
+        "descriptionPattern": { "type": "string" },
+        "keywords": { "type": "array" }
+      },
+      "required": ["id", "slug"]
+    },
+    "CMS": {
+      "title": "CMS",
+      "description": "Dynamic layout definitions serving dynamic assets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "page": { "type": "string" },
+        "section": { "type": "string" },
+        "content": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "page", "section"]
+    },
+    "EmailTemplate": {
+      "title": "EmailTemplate",
+      "description": "Template layouts utilized for system mails",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "htmlContent": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "subject"]
+    },
+    "WhatsAppTemplate": {
+      "title": "WhatsAppTemplate",
+      "description": "Regulatory verified templates for automated notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "bodyText": { "type": "string" },
+        "language": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "bodyText"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Tracks specific user flow checkpoints",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "action": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "action"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Core user authentication configurations"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Authorized administrative accounts"
+    },
+    "/roles/{roleId}": {
+      "schema": "Role",
+      "description": "Role identities definition maps"
+    },
+    "/permissions/{permissionId}": {
+      "schema": "Permission",
+      "description": "Security rule declarations mapping"
+    },
+    "/categories/{catId}": {
+      "schema": "Category",
+      "description": "Top-level groupings"
+    },
+    "/subcategories/{subcatId}": {
+      "schema": "Subcategory",
+      "description": "Detailed sub-groupings mapping"
+    },
+    "/documents/{docId}": {
+      "schema": "DocumentTemplate",
+      "description": "Standard documents models"
+    },
+    "/questionSets/{setId}": {
+      "schema": "QuestionSet",
+      "description": "Wizard sets of document templates"
+    },
+    "/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Wizard steps definition"
+    },
+    "/clauses/{clauseId}": {
+      "schema": "Clause",
+      "description": "Vetted standard contract terms"
+    },
+    "/knowledgeBase/{id}": {
+      "schema": "KnowledgeBase",
+      "description": "Expert guidelines articles"
+    },
+    "/users/{userId}/drafts/{draftId}": {
+      "schema": "Draft",
+      "description": "Conversational active sessions"
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": "Order",
+      "description": "In-app purchases"
+    },
+    "/users/{userId}/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Financial processing verifications receipts"
+    },
+    "/users/{userId}/refunds/{refundId}": {
+      "schema": "Refund",
+      "description": "Financial transaction returns logs"
+    },
+    "/users/{userId}/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Rendered customer tax records"
+    },
+    "/coupons/{code}": {
+      "schema": "Coupon",
+      "description": "Promo and code definitions"
+    },
+    "/referrals/{id}": {
+      "schema": "Referral",
+      "description": "User invite tracking ledger"
+    },
+    "/users/{userId}/notifications/{notifId}": {
+      "schema": "Notification",
+      "description": "Transactional direct notifications"
+    },
+    "/users/{userId}/support_tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Help center ticket status log"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer feedback and testimonials validation"
+    },
+    "/crossSell/{id}": {
+      "schema": "CrossSell",
+      "description": "Product upsell mapping rules"
+    },
+    "/analytics/{id}": {
+      "schema": "Analytics",
+      "description": "Usage operations tracking"
+    },
+    "/audit_logs/{id}": {
+      "schema": "AuditLog",
+      "description": "Admin configuration tracking logs"
+    },
+    "/settings/{id}": {
+      "schema": "SystemSetting",
+      "description": "Global settings and model mappings"
+    },
+    "/seo/{id}": {
+      "schema": "SEO",
+      "description": "Platform meta tags control"
+    },
+    "/cms/{id}": {
+      "schema": "CMS",
+      "description": "Dynamic layout text and templates"
+    },
+    "/emailTemplates/{id}": {
+      "schema": "EmailTemplate",
+      "description": "Pre-built newsletter/welcome mails layouts"
+    },
+    "/whatsappTemplates/{id}": {
+      "schema": "WhatsAppTemplate",
+      "description": "Pre-approved templates for WhatsApp"
+    },
+    "/users/{userId}/activity_logs/{id}": {
+      "schema": "ActivityLog",
+      "description": "Audited account activity checkpoints"
+    }
+  }
+}

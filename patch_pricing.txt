@@ -1,0 +1,52 @@
+  const tiers = [
+    {
+      name: 'Basic Agreement',
+      price: '₹49',
+      period: 'per document',
+      description: 'Simple templates for quick agreements.',
+      features: ['Basic templates', 'PDF export', 'Single draft retention', 'Standard formatting'],
+      cta: 'Create Document',
+      popular: false,
+      btnStyle: 'border-2 border-brand-primary text-brand-primary bg-white hover:bg-vanilla-secondary'
+    },
+    {
+      name: 'Essential Contract',
+      price: '₹79',
+      period: 'per document',
+      description: 'Standard contracts for freelancers and individuals.',
+      features: ['Advanced templates', 'PDF & DOCX export', 'Interactive wizard', '1-day revision'],
+      cta: 'Create Contract',
+      popular: false,
+      btnStyle: 'border-2 border-brand-primary text-brand-primary bg-white hover:bg-vanilla-secondary'
+    },
+    {
+      name: 'Professional',
+      price: '₹149',
+      period: 'per document',
+      description: 'Ideal for founders and small business operators.',
+      features: ['All Premium Templates', 'Pristine downloads', 'Manaz wizard', 'Direct email support'],
+      cta: 'Create Premium Document',
+      popular: true,
+      btnStyle: 'bg-brand-primary text-white card-shadow hover:opacity-95'
+    },
+    {
+      name: 'Business Suite',
+      price: '₹299',
+      period: 'per document',
+      description: 'Comprehensive business operations documents.',
+      features: ['Corporate templates', 'Multiple profiles', 'Priority support', '7-day revisions'],
+      cta: 'Get Business Suite',
+      popular: false,
+      btnStyle: 'border-2 border-brand-primary text-brand-primary bg-white hover:bg-vanilla-secondary'
+    },
+    {
+      name: 'Enterprise Custom',
+      price: '₹499',
+      period: 'per document',
+      description: 'Complex custom-tailored agreements.',
+      features: ['Custom drafting', 'Legal formatting', 'Unlimited revisions', 'Dedicated account manager'],
+      cta: 'Request Custom Draft',
+      popular: false,
+      btnStyle: 'bg-brand-secondary text-white hover:bg-brand-secondary/90'
+    }
+  ];

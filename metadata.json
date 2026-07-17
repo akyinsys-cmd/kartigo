@@ -1,0 +1,6 @@
+{
+  "name": "Kartigo Draft",
+  "description": "Expert-Grade Business & Legal Documents",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

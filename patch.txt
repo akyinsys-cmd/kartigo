@@ -1,0 +1,134 @@
+      {/* Mobile Drawer menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            id="mobile-menu"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed top-[72px] left-0 right-0 bottom-0 bg-vanilla-secondary z-30 overflow-y-auto"
+          >
+            <div className="flex flex-col h-full">
+              <div className="space-y-1 p-4 pb-20">
+              {user ? (
+                // Mobile Logged In Items
+                <>
+                  <button
+                    id="mobile-nav-browse"
+                    onClick={() => {
+                      setCurrentView('landing');
+                      setIsMobileMenuOpen(false);
+                      window.scrollTo(0,0);
+                    }}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors mb-2"
+                  >
+                    Browse Templates
+                  </button>
+                  <button
+                    id="mobile-nav-agent"
+                    onClick={() => {
+                      setCurrentView('agent');
+                      setIsMobileMenuOpen(false);
+                      window.scrollTo(0,0);
+                    }}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors mb-2"
+                  >
+                    Manaz
+                  </button>
+                  <button
+                    id="mobile-nav-dashboard"
+                    onClick={() => handleUserMenuAction('overview')}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors mb-2"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    id="mobile-nav-profile"
+                    onClick={() => handleUserMenuAction('profile')}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors mb-2"
+                  >
+                    Profile Settings
+                  </button>
+                  <button
+                    id="mobile-nav-security"
+                    onClick={() => handleUserMenuAction('security')}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors mb-2"
+                  >
+                    Security Settings
+                  </button>
+                  <button
+                    id="mobile-nav-help"
+                    onClick={() => handleUserMenuAction('help')}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors mb-2"
+                  >
+                    Help Center
+                  </button>
+                  <div className="pt-6 mt-6 border-t border-vanilla-main/50">
+                    <button
+                      id="mobile-logout-btn"
+                      onClick={handleSecureLogout}
+                      className="w-full flex items-center justify-center gap-2 py-4 bg-rose-50 text-base font-bold text-rose-600 hover:bg-rose-100 rounded-xl"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Secure Sign Out
+                    </button>
+                  </div>
+                </>
+              ) : (
+                // Mobile Logged Out Items
+                <div className="space-y-2">
+                  <button
+                    id="mobile-nav-agent-guest"
+                    onClick={() => {
+                      setCurrentView('agent');
+                      setIsMobileMenuOpen(false);
+                      window.scrollTo(0,0);
+                    }}
+                    className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors"
+                  >
+                    Manaz Assistant
+                  </button>
+                  {menuItems.map((item) => (
+                    <button
+                      id={`mobile-nav-${item.id}`}
+                      key={item.id}
+                      onClick={(e) => handleNavClick(e, item.id)}
+                      className="w-full text-left block px-4 py-4 text-lg font-semibold rounded-xl text-brand-secondary hover:text-brand-primary bg-white/50 active:bg-vanilla-main transition-colors"
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                  
+                  <div className="pt-6 mt-6 border-t border-vanilla-main flex flex-col gap-4">
+                    <button
+                      id="mobile-login-btn"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onOpenAuth('login');
+                      }}
+                      className="w-full text-center py-4 text-lg font-semibold text-brand-secondary bg-white rounded-xl border border-vanilla-main hover:border-brand-primary transition-colors cursor-pointer"
+                    >
+                      Log in
+                    </button>
+                    <button
+                      id="mobile-register-btn"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onOpenAuth('register');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-4 bg-brand-primary text-white text-lg font-bold rounded-xl shadow-lg shadow-brand-primary/20 active:scale-95 transition-all cursor-pointer"
+                    >
+                      Register
+                    </button>
+                  </div>
+                </div>
+              )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}
